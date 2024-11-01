@@ -1,4 +1,4 @@
-name: CI Build
+name: CI build
 
 on:
   push:
@@ -11,34 +11,30 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: quay.io/rofrano/python:3.11-slim
-
-    # Required services    
+    container: python:3.11-slim
+    
     services:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_PASSWORD: sup3r-s3cr3t
-          POSTGRES_DB: testdb
-        ports:
-          - 5432:5432
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword
+          POSTGRES_DB: mydatabase
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U myuser"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    # Steps for the build
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-            
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip wheel setuptools poetry
+          python -m pip install pip==24.2 psycopg2-binary
+          python -m pip install poetry
           poetry config virtualenvs.create false
-          poetry lock --no-update
           poetry install
-      - name: Run make lint
+      - name: Linting
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -46,19 +42,7 @@ jobs:
           flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
           # Run pylint to catch other PEP8 errors
           pylint service tests --max-line-length=127
-    
-      - name: Wait for database connection
-        run: |
-            for i in {1..30}; do
-              pg_isready -h postgres -p 5432 && break
-              sleep 1
-            done
       - name: Run unit tests with PyTest
         env:
-          DATABASE_URI: postgresql+psycopg2://postgres:sup3r-s3cr3t@postgres:5432/testdb
+          DATABASE_URI: postgresql+psycopg2://myuser:mypassword@postgres:5432/mydatabase
         run: pytest --pspec --cov=service --cov-report=xml --cov-fail-under=95
-    
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3.1.4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
