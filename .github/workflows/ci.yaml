@@ -44,7 +44,6 @@ jobs:
               
       - name: Install dependencies
         run: |
-          python -m pip install psycopg2-binary
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry lock --no-update
@@ -65,6 +64,3 @@ jobs:
         env:
           FLASK_APP: "wsgi:app"
           DATABASE_URI: "postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/testdb"
-
-      - name: Upload code coverage
-        uses: codecov/codecov-action@v3.1.4
