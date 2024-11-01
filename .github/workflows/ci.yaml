@@ -47,6 +47,7 @@ jobs:
           python -m pip install psycopg2-binary
           python -m pip install poetry
           poetry config virtualenvs.create false
+          poetry lock --no-update
           poetry install
 
       - name: Run Code Quality Checks
